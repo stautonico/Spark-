@@ -1,0 +1,308 @@
+#!/usr/bin/env python
+from __future__ import print_function
+import argparse
+import os
+import requests
+import subprocess
+
+# Constants
+SCRIPT_PATH = os.path.abspath(__file__)
+SCRIPT_DIR = os.path.dirname(SCRIPT_PATH)
+
+DEFAULT_TOOLCHAIN_PATH = os.path.join(SCRIPT_DIR, "CMake", "toolchain")
+TOOLCHAIN_TEMP_DIR = os.path.join(SCRIPT_DIR, ".toolchain_build")
+
+DEFAULT_GCC_VERSION = "12.1.0"
+DEFAULT_BINUTILS_VERSION = "2.38"
+
+DEFAULT_TARGET_ARCH = "i686-elf"
+
+# Colors
+BLACK = "\033[30m"
+RED = "\033[31m"
+GREEN = "\033[32m"
+YELLOW = "\033[33m"
+BLUE = "\033[34m"
+MAGENTA = "\033[35m"
+CYAN = "\033[36m"
+WHITE = "\033[37m"
+RESET = "\033[0m"
+
+
+def print_colored(msg, color):
+    """Prints a message in a given color"""
+    print(f"{color}{msg}{RESET}")
+
+
+def debug(msg):
+    """Prints a debug message"""
+    print_colored(f"{CYAN}[ DEBUG ]{RESET} {msg}", CYAN)
+
+
+def info(msg):
+    """Prints an info message"""
+    print(f"{BLUE}[ INFO ]{RESET} {msg}")
+
+
+def warn(msg):
+    """Prints a warning message"""
+    print(f"{YELLOW}[ WARN ]{RESET} {msg}")
+
+
+def success(msg):
+    """Prints a success message"""
+    print_colored(f"{GREEN}[ SUCCESS ]{RESET} {msg}", GREEN)
+
+
+def error(msg):
+    """Prints an error message"""
+    print_colored(f"{RED}[ ERROR ]{RESET} {msg}", RED)
+
+
+def run_command(cmd, verbose=False):
+    """Runs a command and print verbose output if needed"""
+    if verbose:
+        print(f"{BLUE}[ RUN ]{RESET} {cmd}")
+
+    return subprocess.call(
+        cmd.split(), stdout=subprocess.DEVNULL if not verbose else None,
+        stderr=subprocess.DEVNULL if not verbose else None)
+
+
+def check(ret_code, error_msg):
+    """Checks the return code of a command and prints an error message if needed"""
+    if ret_code != 0:
+        error(error_msg)
+        exit(1)
+
+
+# Actions
+def build_toolchain(_args):
+    """Builds the toolchain"""
+    # Get our args we'll need
+    toolchain_output_dir = _args.toolchain_dir
+    overwrite = _args.overwrite
+    clear_cache = _args.clear_cache
+    gcc_version = _args.gcc_version
+    binutils_version = _args.binutils_version
+    gcc_url = _args.gcc_url or f"https://ftp.gnu.org/gnu/gcc/gcc-{gcc_version}/gcc-{gcc_version}.tar.gz"
+    binutils_url = _args.binutils_url or f"https://ftp.gnu.org/gnu/binutils/binutils-{binutils_version}.tar.gz"
+    target_arch = _args.target_arch
+    verbose = _args.verbose
+    jobs = _args.jobs
+    no_gcc = _args.no_gcc
+    no_binutils = _args.no_binutils
+
+    print_colored("Starting toolchain build", BLUE)
+
+    # Make sure the build directory exists
+    if os.path.exists(toolchain_output_dir):
+        if not overwrite:
+            warn(f"Build directory already exists: {toolchain_output_dir}")
+            print_colored("Use --overwrite to force build or remove existing toolchain", YELLOW)
+            return
+    else:
+        os.makedirs(toolchain_output_dir)
+
+    # Make the temporary build directory
+    if not os.path.exists(TOOLCHAIN_TEMP_DIR):
+        os.makedirs(TOOLCHAIN_TEMP_DIR)
+    else:
+        # If we have clear cache enabled, remove the exiting build directory and recreate it
+        if clear_cache:
+            info("Clearing build cache")
+            os.system(f"rm -rf {TOOLCHAIN_TEMP_DIR}")
+            os.makedirs(TOOLCHAIN_TEMP_DIR)
+        else:
+            # Otherwise, we just warn that we're using the existing temporary build directory
+            warn(f"Using existing build cache")
+
+    os.chdir(TOOLCHAIN_TEMP_DIR)
+
+    if not no_binutils:
+        # Download and extract binutils
+        info("Downloading Binutils")
+        if not clear_cache and os.path.exists(f"binutils.tar.gz"):
+            warn("Using existing Binutils archive")
+        else:
+            r = requests.get(binutils_url)
+            # Confirm the download was successful
+            if r.status_code != 200:
+                error(f"Failed to download Binutils: HTTP {r.status_code}")
+
+            with open("binutils.tar.gz", "wb") as f:
+                f.write(r.content)
+
+            info("Extracting Binutils")
+            check(run_command("tar -xzvf binutils.tar.gz", verbose), "Failed to extract Binutils")
+
+    if not no_gcc:
+        # Download and extract gcc
+        info("Downloading GCC")
+
+        # Check if we have the archive already, and we don't have clear cache enabled
+        if not clear_cache and os.path.exists(f"gcc.tar.gz"):
+            warn("Using existing GCC archive")
+        else:
+            r = requests.get(gcc_url)
+            # Confirm the download was successful
+            if r.status_code != 200:
+                error(f"Failed to download GCC: HTTP {r.status_code}")
+                exit(1)
+
+            with open("gcc.tar.gz", "wb") as f:
+                f.write(r.content)
+
+            info("Extracting GCC")
+            check(run_command("tar -xzvf gcc.tar.gz", verbose), "Failed to extract GCC")
+
+    if not no_binutils:
+        # Build binutils
+        info("Building binutils (this may take a while)")
+        # Remove existing binutils build directory
+        if os.path.exists("binutils-build") and not clear_cache:
+            run_command(f"rm -rvf binutils-build", verbose)
+
+        if not os.path.exists("binutils-build"):
+            os.mkdir("binutils-build")
+
+        os.chdir("binutils-build")
+
+        check(run_command(
+            f"./../binutils-{binutils_version}/configure --target={target_arch} --prefix={toolchain_output_dir} --with-sysroot --disable-nls --disable-werror",
+            verbose), "Failed to configure binutils")
+
+        check(run_command(f"make -j{jobs}", verbose), "Failed to build binutils")
+        check(run_command(f"make install", verbose), "Failed to install binutils")
+
+        info("Verifying binutils installation")
+
+        # Verify that binutils was built correctly
+        # Check that the toolchain/bin directory exists and isn't empty
+        if not os.path.exists(f"{toolchain_output_dir}/bin"):
+            error(f"Binutils build failed: {toolchain_output_dir}/bin does not exist")
+            exit(1)
+        if not os.listdir(f"{toolchain_output_dir}/bin"):
+            error(f"Binutils build failed: {toolchain_output_dir}/bin is empty")
+            exit(1)
+        else:
+            success("Binutils build successful")
+
+        os.chdir("..")
+
+    if not no_gcc:
+        # Build gcc
+        info("Building GCC (this may take a while)")
+        # Remove existing gcc build directory
+        if os.path.exists("gcc-build") and not clear_cache:
+            run_command(f"rm -rvf gcc-build", verbose)
+
+        if not os.path.exists("gcc-build"):
+            os.mkdir("gcc-build")
+
+        os.chdir("gcc-build")
+
+        check(run_command(
+            f"./../gcc-{gcc_version}/configure --target={target_arch} --prefix={toolchain_output_dir} --disable-nls --enable-languages=c,c++ --without-headers",
+            verbose), "Failed to configure GCC")
+        check(run_command(f"make all-gcc -j{jobs}", verbose), "Failed to build GCC")
+        check(run_command(f"make all-target-libgcc -j{jobs}", verbose), "Failed to build GCC")
+        check(run_command(f"make install-gcc", verbose), "Failed to install GCC")
+        check(run_command(f"make install-target-libgcc", verbose), "Failed to install GCC")
+
+        # Verify that gcc was built correctly
+        # Run newly built gcc --version
+        info("Verifying GCC installation")
+        # You need to ./ here because we're running a local file, not in path
+        os.chdir(f"./{toolchain_output_dir}/bin")
+        check(run_command(f"{target_arch}-gcc --version", verbose),
+              "Failed to install GCC or GCC was built incorrectly")
+
+    success("Successfully built toolchain")
+
+
+def clean_toolchain(_args):
+    """
+    Clean the toolchain
+    """
+    info("Cleaning toolchain")
+
+    # If the toolchain isn't in the project directory, we'll refuse to clean it (just in case we delete something important)
+    toolchain_dir = os.path.abspath(_args.toolchain_dir)
+
+    if not toolchain_dir.startswith(SCRIPT_DIR):
+        error("Cannot clean toolchain outside of project directory")
+        exit(1)
+
+    # Remove the toolchain directory
+    check(run_command(f"rm -rvf {toolchain_dir}", _args.verbose), "Failed to clean toolchain")
+
+    success("Successfully cleaned toolchain")
+
+
+def clean_toolchain_temp(_args):
+    """
+    Clean the toolchain temp directory
+    """
+    info("Cleaning toolchain temp directory")
+
+    if not os.path.exists(TOOLCHAIN_TEMP_DIR):
+        check(run_command(f"rm -rvf {TOOLCHAIN_TEMP_DIR}", _args.verbose), "Failed to clean toolchain temp directory")
+
+    success("Successfully cleaned toolchain temp directory")
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--toolchain", help=f"CMake toolchain file to use (default: {DEFAULT_TOOLCHAIN_PATH})",
+                        default=DEFAULT_TOOLCHAIN_PATH)
+    parser.add_argument("--build-type", help="CMake build type (default: Debug)", default="Debug")
+    parser.add_argument("--build-dir", help="CMake build directory (default: build)", default="build")
+    parser.add_argument("--toolchain-dir", help=f"CMake toolchain directory (default: {SCRIPT_DIR}/toolchain)",
+                        default=f"{SCRIPT_DIR}/toolchain")
+    parser.add_argument("--verbose", help="Enable verbose output", action="store_true", default=False)
+
+    # Actions and their unique flags
+    parser.add_argument("--build-toolchain", "-t", help="Build CMake toolchain", action="store_true", default=False)
+
+    parser.add_argument("--overwrite", help="Overwrite existing toolchain build", action="store_true", default=False)
+    parser.add_argument("--clear-cache", help="Clear the toolchain build cache", action="store_true", default=False)
+    parser.add_argument("--gcc-version", help="GCC version to build", default=DEFAULT_GCC_VERSION)
+    parser.add_argument("--gcc-url", help="The URL to download GCC from")
+    parser.add_argument("--binutils-version", help="Binutils version to build", default=DEFAULT_BINUTILS_VERSION)
+    parser.add_argument("--binutils-url", help="The URL to download binutils from")
+    parser.add_argument("--target-arch", help="Target architecture to build for", default=DEFAULT_TARGET_ARCH)
+    parser.add_argument("-j", "--jobs", help="Number of parallel jobs to run", type=int, default=1)
+    parser.add_argument("--no-gcc", help="Don't build GCC", action="store_true", default=False)
+    parser.add_argument("--no-binutils", help="Don't build Binutils", action="store_true", default=False)
+
+    parser.add_argument("--clean-toolchain-temp", help="Clean the toolchain temp directory", action="store_true",
+                        default=False)
+    parser.add_argument("--clean-toolchain", help="Removes the existing toolchain build", action="store_true",
+                        default=False)
+    parser.add_argument("--clean", help="Clean build directory", action="store_true")
+
+    args = parser.parse_args()
+
+    # Make sure the actions are mutually exclusive
+    if sum([bool(args.build_toolchain), bool(args.clean)]) > 1:
+        parser.error("Only one action can be specified")
+
+    # Build toolchain
+    if args.build_toolchain:
+        build_toolchain(args)
+    if args.clean_toolchain:
+        # We want to confirm that the user wants to clean the toolchain
+        # because building the toolchain is a long process
+        print("Are you sure you want to clean the toolchain?")
+        print("This will remove all files in the toolchain directory")
+        if input("y/n ").lower() == "y":
+            clean_toolchain(args)
+        else:
+            print("Cancelled")
+    elif args.clean_toolchain_temp:
+        clean_toolchain_temp(args)
+    elif args.clean:
+        debug("Clean action not yet implemented")
+    else:
+        parser.print_help()
