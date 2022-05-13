@@ -15,7 +15,7 @@ TOOLCHAIN_TEMP_DIR = os.path.join(SCRIPT_DIR, ".toolchain_build")
 DEFAULT_GCC_VERSION = "12.1.0"
 DEFAULT_BINUTILS_VERSION = "2.38"
 
-DEFAULT_TARGET_ARCH = "i686-elf"
+DEFAULT_TARGET_ARCH = "i686"
 
 # Colors
 BLACK = "\033[30m"
@@ -169,7 +169,7 @@ def build_toolchain(_args):
         os.chdir("binutils-build")
 
         check(run_command(
-            f"./../binutils-{binutils_version}/configure --target={target_arch} --prefix={toolchain_output_dir} --with-sysroot --disable-nls --disable-werror",
+            f"./../binutils-{binutils_version}/configure --target={target_arch}-elf --prefix={toolchain_output_dir} --with-sysroot --disable-nls --disable-werror",
             verbose), "Failed to configure binutils")
 
         check(run_command(f"make -j{jobs}", verbose), "Failed to build binutils")
@@ -203,7 +203,7 @@ def build_toolchain(_args):
         os.chdir("gcc-build")
 
         check(run_command(
-            f"./../gcc-{gcc_version}/configure --target={target_arch} --prefix={toolchain_output_dir} --disable-nls --enable-languages=c,c++ --without-headers",
+            f"./../gcc-{gcc_version}/configure --target={target_arch}-elf --prefix={toolchain_output_dir} --disable-nls --enable-languages=c,c++ --without-headers",
             verbose), "Failed to configure GCC")
         check(run_command(f"make all-gcc -j{jobs}", verbose), "Failed to build GCC")
         check(run_command(f"make all-target-libgcc -j{jobs}", verbose), "Failed to build GCC")
@@ -214,8 +214,8 @@ def build_toolchain(_args):
         # Run newly built gcc --version
         info("Verifying GCC installation")
         # You need to ./ here because we're running a local file, not in path
-        os.chdir(f"./{toolchain_output_dir}/bin")
-        check(run_command(f"{target_arch}-gcc --version", verbose),
+        os.chdir(f"{toolchain_output_dir}/bin")
+        check(run_command(f"./{target_arch}-elf-gcc --version", verbose),
               "Failed to install GCC or GCC was built incorrectly")
 
     success("Successfully built toolchain")
@@ -290,8 +290,10 @@ if __name__ == '__main__':
 
     # Build toolchain
     if args.build_toolchain:
+        warn(f"Note that this is not the OS targeted toolchain, it is just a generic {args.target_arch} compiler")
+        print_colored(f"This will be replaced with the {args.target_arch}-spark compiler once libC is written.", YELLOW)
         build_toolchain(args)
-    if args.clean_toolchain:
+    elif args.clean_toolchain:
         # We want to confirm that the user wants to clean the toolchain
         # because building the toolchain is a long process
         print("Are you sure you want to clean the toolchain?")

@@ -1,0 +1,40 @@
+# @formatter:off
+set(PROJECT_ROOT ${CMAKE_CURRENT_SOURCE_DIR})
+set(ROOT_SOURCE_DIR ${PROJECT_ROOT}/src)
+
+set(TOOLCHAIN_DIR ${CMAKE_CURRENT_SOURCE_DIR}/toolchain)
+set(TOOLCHAIN_BIN_DIR ${TOOLCHAIN_DIR}/bin)
+
+SET(TARGET_ARCH i686) # Default
+set(COMPILER_TARGET ${TARGET_ARCH}-elf)
+set(MACHINE_TRIPLET ${TARGET_ARCH}-spark)
+
+# Set the OS we're targeting
+set(CMAKE_SYSTEM_NAME spark)
+set(CMAKE_HOST_SYSTEM_NAME Linux)
+set(CMAKE_PROCESSOR_ARCHITECTURE ${TARGET_ARCH})
+set(CMAKE_SYSTEM_PROCESSOR ${TARGET_ARCH})
+#set(CMAKE_SYSROOT ${PROJECT_ROOT}/sysroot)
+
+set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM     NEVER)
+set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY     ONLY)
+set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE     ONLY)
+
+# Reduce compiler sanity check when cross-compiling.
+set(CMAKE_TRY_COMPILE_TARGET_TYPE         STATIC_LIBRARY)
+
+set(CMAKE_AR                    ${TOOLCHAIN_BIN_DIR}/${COMPILER_TARGET}-ar)
+set(CMAKE_ASM_COMPILER          ${TOOLCHAIN_BIN_DIR}/${COMPILER_TARGET}-as)
+set(CMAKE_C_COMPILER            ${TOOLCHAIN_BIN_DIR}/${COMPILER_TARGET}-gcc)
+set(CMAKE_CXX_COMPILER          ${TOOLCHAIN_BIN_DIR}/${COMPILER_TARGET}-g++)
+set(CMAKE_LINKER                ${TOOLCHAIN_BIN_DIR}/${COMPILER_TARGET}-ld)
+set(CMAKE_OBJCOPY               ${TOOLCHAIN_BIN_DIR}/${COMPILER_TARGET}-objcopy)
+set(CMAKE_RANLIB                ${TOOLCHAIN_BIN_DIR}/${COMPILER_TARGET}-ranlib)
+set(CMAKE_SIZE                  ${TOOLCHAIN_BIN_DIR}/${COMPILER_TARGET}-size)
+set(CMAKE_STRIP                 ${TOOLCHAIN_BIN_DIR}/${COMPILER_TARGET}-strip)
+
+STRING(REPLACE "_" "-" CMAKE_PROCESSOR_ARCHITECTURE "${CMAKE_PROCESSOR_ARCHITECTURE}")
+
+set(CMAKE_C_FLAGS               "-std=gnu99 -ffreestanding -O2 -Wall -Wextra -m32 -march=${CMAKE_PROCESSOR_ARCHITECTURE} --sysroot=${PROJECT_ROOT}/sysroot" CACHE INTERNAL "C compiler flags")
+set(CMAKE_CXX_FLAGS             "-std=c++20 -ffreestanding -O2 -Wall -Wextra -m32 -march=${CMAKE_PROCESSOR_ARCHITECTURE} --sysroot=${PROJECT_ROOT}/sysroot" CACHE INTERNAL "C++ compiler flags")
+# @formatter:on
