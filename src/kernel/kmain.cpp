@@ -5,6 +5,9 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include "kernel/kernel_libs/string.h"
+#include <kernel/drivers/serial.h>
+
 
 /* Check if the compiler thinks you are targeting the wrong operating system. */
 #if defined(__linux__)
@@ -115,4 +118,7 @@ extern "C" void kmain(void)
 
     /* Newline support is left as an exercise. */
     terminal_writestring("Hello, kernel World!\n");
+
+    serial::qemu_printf("Hello from spark++ via serial on COM1!\n");
+
 }

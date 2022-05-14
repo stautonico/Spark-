@@ -141,7 +141,7 @@
 #
 
 
-cmake_minimum_required(VERSION 3.15)
+cmake_minimum_required(VERSION 3.20)
 project(spark-kernel)
 
 ## Setup cross-compilation
@@ -159,23 +159,13 @@ set(CMAKE_C_FLAGS "-ffreestanding -O2 -Wall -Wextra")
 ## A simple lib to test C compilation and linking
 #add_library(mylib mylib.c)
 
+# TODO: Look how serenity does this
+# or do a add_subdirectory(drivers) and add_subdirectory(arch)
+
+set(KERNEL_SOURCES drivers/serial.cpp arch/i686/io.cpp kernel_libs/printf.cpp kernel_libs/printf.h kernel_libs/string.cpp kernel_libs/string.cpp kernel_libs/string.h)
+
 ## Building the kernel binary
-add_executable(spark.bin ${CMAKE_CURRENT_SOURCE_DIR}/arch/${TARGET_ARCH}/boot/boot.s kmain.cpp)
+add_executable(spark.bin ${CMAKE_CURRENT_SOURCE_DIR}/arch/${TARGET_ARCH}/boot/boot.s kmain.cpp ${KERNEL_SOURCES})
 set_target_properties(spark.bin PROPERTIES LINK_FLAGS "-T ${CMAKE_CURRENT_SOURCE_DIR}/arch/${TARGET_ARCH}/link.ld -ffreestanding -O2 -nostdlib -lgcc")
-add_custom_command(TARGET spark.bin POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_SOURCE_DIR}/bin
-        COMMAND ${CMAKE_COMMAND} -E copy spark.bin ${CMAKE_SOURCE_DIR}/bin/)
 
-message(STATUS "Current souce dir: ${CMAKE_CURRENT_SOURCE_DIR}")
-
-set(KERNEL_ISO spark.iso)
-
-## Generating the ISO file
-add_custom_target(spark.iso
-        COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/../../generate_iso.sh
-        COMMENT "Generating the kernel bootable iso file"
-        BYPRODUCTS ${KERNEL_ISO})
-add_dependencies(spark.iso spark.bin)
-add_custom_command(TARGET spark.iso POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_SOURCE_DIR}/bin
-        COMMAND ${CMAKE_COMMAND} -E copy ${KERNEL_ISO} ${CMAKE_CURRENT_SOURCE_DIR}/bin)
+target_include_directories(spark.bin PRIVATE ${CMAKE_SOURCE_DIR}/src/)

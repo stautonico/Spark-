@@ -1,4 +1,4 @@
-from .io import BLUE, YELLOW, RESET, error, info, warn, success, print_colored
+from .io import BLUE, YELLOW, RESET, error, info, warn, success, print_colored, debug
 import subprocess
 import os
 from .const import *
@@ -177,7 +177,7 @@ def clean_toolchain(_args):
     # (just in case we delete something important)
     toolchain_path = os.path.abspath(_args.toolchain_path)
 
-    if not toolchain_path.startswith(SCRIPT_DIR):
+    if not toolchain_path.startswith(PROJECT_ROOT):
         error("Refusing to clean toolchain outside of project directory")
         exit(1)
 
@@ -199,3 +199,97 @@ def clean_toolchain_temp(_args):
               "Failed to clean toolchain temp directory")
 
     success("Successfully cleaned toolchain temp directory")
+
+
+def clean_kernel(_args):
+    """
+    Clean the kernel
+    """
+    info("Cleaning kernel")
+
+    # Check if the build directory exists
+    if os.path.exists(os.path.join(PROJECT_ROOT, "build")):
+        check(run_command(f"rm -rvf {os.path.join(PROJECT_ROOT, 'build')}", _args.verbose),
+              "Failed to clean kernel (permissions?)")
+
+    success("Successfully cleaned kernel")
+
+
+def build_kernel(_args):
+    """
+    Build the kernel using CMake
+    """
+    info("Building kernel")
+
+    # Make the build directory if it doesn't exist
+    if not os.path.exists(os.path.join(PROJECT_ROOT, "build")):
+        os.mkdir(os.path.join(PROJECT_ROOT, "build"))
+
+    # Change to the build directory
+    os.chdir(os.path.join(PROJECT_ROOT, "build"))
+
+    # Build our cmake command to run
+    cmake_command = f"cmake .."
+
+    if _args.use_ninja:
+        cmake_command += f" -GNinja"
+    elif _args.use_make:
+        cmake_command += f" -G\"Unix Makefiles\""
+
+    cmake_command += f" -DCMAKE_TOOLCHAIN_FILE={_args.cmake_toolchain_file}"
+    cmake_command += f" -DCMAKE_BUILD_TYPE={_args.build_type.title()}"
+    cmake_command += f" -DTARGET_ARCH={_args.target_arch}"
+
+    check(run_command(cmake_command, _args.verbose), "Failed to run CMake (try running with --clean-first)")
+
+    if _args.use_ninja:
+        check(run_command("ninja", _args.verbose),
+              "Failed to build kernel (try running with --clean-first or --verbose for more info)")
+    else:
+        check(run_command("make", _args.verbose),
+              "Failed to build kernel (try running with --clean-first or --verbose for more info)")
+
+    # Make sure we reset our working directory
+    os.chdir(PROJECT_ROOT)
+
+    success("Successfully built kernel")
+
+
+def build_iso(_args):
+    """
+    Make an ISO image
+    """
+    info("Making ISO image")
+
+    check(run_command("mkdir -pv build/isodir/boot/grub", _args.verbose), "Failed to make grub build directory")
+    check(run_command("cp -rv build/src/kernel/spark.bin build/isodir/boot", _args.verbose),
+          "Failed to copy kernel to ISO directory")
+    with open("build/isodir/boot/grub/grub.cfg", "w") as f:
+        f.write("""
+        menuentry \"spark++\" {
+            multiboot /boot/spark.bin
+        }
+        """)
+
+    check(run_command("grub-mkrescue -o build/spark.iso build/isodir", _args.verbose), "Failed to make ISO image")
+
+    success("Successfully made ISO image (build/spark.iso)")
+
+
+def run_qemu(_args):
+    """
+    Run the kernel in QEMU
+    """
+    info("Running spark++ in QEMU")
+
+    # TODO: Automatically check architecture
+    try:
+        # We run this in verbose mode regardless of the user's choice
+        # This is because we want to see the output of the serial port
+        check(run_command("qemu-system-x86_64 -m 512 -serial stdio -cdrom build/spark.iso", True),
+              "Failed to run kernel in QEMU")
+    except KeyboardInterrupt:
+        warn("You probably shouldn't force quit QEMU with Ctrl+C :/")
+
+    success("Successfully shut down QEMU")
+

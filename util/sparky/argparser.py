@@ -1,11 +1,13 @@
 # Thanks Chase Seibert, this is alot better than using argparse on its own
 # https://chase-seibert.github.io/blog/2014/03/21/python-multilevel-argparse.html
 import argparse
+import os.path
 from argparse import Namespace
 import sys
 from .io import debug, info, warn, success, error, YELLOW, print_colored, colored_string, confirm
-from .const import __VERSION__, DEFAULT_ARCH, DEFAULT_TOOLCHAIN_PATH, DEFAULT_GCC_VERSION, DEFAULT_BINUTILS_VERSION
-from .build import build_toolchain, clean_toolchain, clean_toolchain_temp
+from .const import __VERSION__, DEFAULT_ARCH, DEFAULT_TOOLCHAIN_PATH, DEFAULT_GCC_VERSION, DEFAULT_BINUTILS_VERSION, \
+    DEFAULT_CMAKE_TOOLCHAIN_FILE, PROJECT_ROOT
+import util.sparky.build as build
 import pprint
 
 """
@@ -17,10 +19,6 @@ top level commands:
     - test
 
     build components:
-        - build kernel
-          options:
-            --no-iso (don't build iso)
-        
         - build kernel modules (name | all)
         - build userland
         - build library (name | all)
@@ -53,6 +51,7 @@ Available commands:
     build <component> [<args>] - Builds a specific component (e.g. toolchain, kernel, etc.)
     clean <component> [<args>] - Cleans a specific component (e.g. toolchain, kernel, etc.)
     test <component> [<args>] - Runs tests for a specific component (e.g. toolchain, kernel, etc.)
+    generate <component> [<args>] - Generates a specific component (e.g. toolchain, kernel, etc.)
     run [<args>] - Runs spark++
     
 Other options:
@@ -88,6 +87,16 @@ Other options:
         # Call subcommand by name
         getattr(self, args.command)(args_for_subcommand)
 
+    def run(self, args):
+        # TODO: Maybe add some arguments
+
+        # Confirm that the build/spark.iso file exists
+        if not os.path.exists(os.path.join(PROJECT_ROOT, "build", "spark.iso")):
+            error("spark.iso not found. Run `sparky build kernel` to build spark.iso")
+            exit(1)
+
+        build.run_qemu(args)
+
     def build(self, parent_args):
         parser = argparse.ArgumentParser(description="Builds a specific component (e.g. toolchain, kernel, etc.)")
         parser.add_argument("component", help="Component to build", nargs="?")
@@ -97,6 +106,8 @@ Other options:
                             choices=["release", "debug"], default="debug")
         parser.add_argument("--jobs", "-j", help="Number of jobs to run simultaneously (default: 1)", type=int,
                             default=1)
+        parser.add_argument("--cmake-toolchain-file", help="Path to the CMake toolchain file to use",
+                            default=DEFAULT_CMAKE_TOOLCHAIN_FILE)
         parser.add_argument("--target-arch", "-t", help="Target architecture (default: i686)", default=DEFAULT_ARCH)
         parser.add_argument("--use-make", help="Use make instead of ninja", action="store_true")
         parser.add_argument("--use-ninja", help="Use ninja instead of make", action="store_true")
@@ -129,7 +140,7 @@ Other options:
 
         args_for_subcommand = Namespace(verbose=args.verbose, help=args.help, build_type=args.build_type,
                                         jobs=args.jobs, target_arch=args.target_arch, use_make=args.use_make,
-                                        use_ninja=args.use_ninja)
+                                        use_ninja=args.use_ninja, cmake_toolchain_file=args.cmake_toolchain_file)
 
         # Call subcommand by name
         getattr(self, "build_" + args.component)(args)
@@ -159,7 +170,21 @@ Other options:
 
         warn(f"Note that this is not the OS targeted toolchain, it is just a generic {args.target_arch} compiler")
         print_colored(f"This will be replaced with the {args.target_arch}-spark compiler once libC is written.", YELLOW)
-        build_toolchain(args)
+        build.build_toolchain(args)
+
+    def build_kernel(self, parent_args=None):
+        parser = argparse.ArgumentParser(description="Builds the kernel")
+        parser.add_argument("--no-iso", help="Don't build the ISO", action="store_true")
+        parser.add_argument("--clean-first", help="Clean the build directory before building (can resolve issues)", action="store_true")
+
+        args = merge_args(parser.parse_known_args(sys.argv[3:])[0], parent_args)
+
+        if args.clean_first:
+            build.clean_kernel(args)
+
+        build.build_kernel(args)
+        if not args.no_iso:
+            build.build_iso(args)
 
     def clean(self, parent_args):
         parser = argparse.ArgumentParser(description="Clean one or more components")
@@ -208,7 +233,7 @@ Other options:
                 info("Cancelling clean toolchain")
                 exit(0)
 
-        clean_toolchain(args)
+        build.clean_toolchain(args)
 
     def clean_temp(self, parent_args):
         parser = argparse.ArgumentParser(
@@ -216,4 +241,20 @@ Other options:
 
         args = merge_args(parser.parse_known_args(sys.argv[3 + parent_args.args_to_skip:])[0], parent_args)
 
-        clean_toolchain_temp(args)
+        build.clean_toolchain_temp(args)
+
+    def clean_kernel(self, parent_args):
+        parser = argparse.ArgumentParser(
+            description="Clean the kernel build directory")
+
+        args = merge_args(parser.parse_known_args(sys.argv[3 + parent_args.args_to_skip:])[0], parent_args)
+
+        build.clean_kernel(args)
+
+    def generate(self, parent_args):
+        parser = argparse.ArgumentParser(description="Generate something")
+        parser.add_argument("component", help="The component to generate (e.g. cmake toolchain file)")
+
+        args = merge_args(parser.parse_known_args(sys.argv[2:])[0], parent_args)
+
+        print(args)
