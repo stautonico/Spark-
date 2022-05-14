@@ -1,5 +1,5 @@
 #include <kernel/drivers/serial.h>
-#include <kernel/arch/i686/io.h>
+#include <kernel/arch/x86/i686/io.h>
 #include <kernel/kernel_libs/printf.h>
 #include <stdarg.h>
 
@@ -24,12 +24,4 @@ void serial::write_serial(char a) {
     // TODO: Specify the serial port to use.
     while (serial::is_transmit_empty() == 0);
     outb(COM1, a);
-}
-
-
-void serial::qemu_printf(const char *fmt, ...) {
-    va_list(ap);
-    va_start(ap, fmt);
-    vsprintf(nullptr, write_serial, fmt, ap);
-    va_end(ap);
 }

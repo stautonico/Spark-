@@ -7,12 +7,13 @@
 #include <kernel/kernel_libs/string.h>
 
 void *memset(void *s, int c, size_t n) {
-    auto *p = (unsigned char *)s;
+    auto *p = (unsigned char *) s;
     while (n--) {
-        *p++ = (unsigned char)c;
+        *p++ = (unsigned char) c;
     }
     return s;
 }
+
 int atoi(const char *nptr) {
     int c;
     int neg = 0;
@@ -49,7 +50,7 @@ char *itoa(int value, char *str, int base) {
         *p++ = '-';
         v = -value;
     } else {
-        v = (unsigned long)value;
+        v = (unsigned long) value;
     }
 
     /* Pre-compute the divisor for specified base. */
@@ -95,4 +96,23 @@ char *strcpy(char *s1, const char *s2) {
         *dst++ = *src++;
     *dst = '\0'; // Spec says include null terminator.
     return s1;
+}
+
+char *strcat(char *s1, const char *s2) {
+    char *dst = s1;
+    const char *src = s2;
+    while (*dst)
+        dst++;
+    while (*src)
+        *dst++ = *src++;
+    *dst = '\0'; // Spec says include null terminator.
+    return s1;
+}
+
+size_t strlen(const char *s) {
+    size_t n = 0;
+    while (*s++)
+        n++;
+
+    return n;
 }

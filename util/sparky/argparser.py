@@ -124,6 +124,10 @@ Other options:
             error(f"No component specified, valid components are: {', '.join(valid_components)}")
             exit(1)
 
+        if args.build_type.lower() == "release":
+            error("Release builds are not yet supported")
+            exit(1)
+
         # Make sure 'use-make' and 'use-ninja' are mutually exclusive
         if args.use_make and args.use_ninja:
             error("Cannot use both --use-make and --use-ninja")

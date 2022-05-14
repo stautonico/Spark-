@@ -162,10 +162,19 @@ set(CMAKE_C_FLAGS "-ffreestanding -O2 -Wall -Wextra")
 # TODO: Look how serenity does this
 # or do a add_subdirectory(drivers) and add_subdirectory(arch)
 
-set(KERNEL_SOURCES drivers/serial.cpp arch/i686/io.cpp kernel_libs/printf.cpp kernel_libs/printf.h kernel_libs/string.cpp kernel_libs/string.cpp kernel_libs/string.h)
+set(KERNEL_SOURCES kernel_libs/printf.cpp kernel_libs/printf.h kernel_libs/string.cpp kernel_libs/string.cpp kernel_libs/string.h debug.cpp)
+
+add_subdirectory(arch)
+add_subdirectory(drivers)
+
+#add_compile_definitions(KERNEL)
+# Add KENREL to c and c++ flags
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DKERNEL")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DKERNEL")
 
 ## Building the kernel binary
-add_executable(spark.bin ${CMAKE_CURRENT_SOURCE_DIR}/arch/${TARGET_ARCH}/boot/boot.s kmain.cpp ${KERNEL_SOURCES})
-set_target_properties(spark.bin PROPERTIES LINK_FLAGS "-T ${CMAKE_CURRENT_SOURCE_DIR}/arch/${TARGET_ARCH}/link.ld -ffreestanding -O2 -nostdlib -lgcc")
+# TODO: Check the architecture when including the boot.s
+add_executable(spark.bin ${CMAKE_CURRENT_SOURCE_DIR}/arch/x86/${TARGET_ARCH}/boot/boot.s kmain.cpp ${KERNEL_SOURCES})
+set_target_properties(spark.bin PROPERTIES LINK_FLAGS "-T ${CMAKE_CURRENT_SOURCE_DIR}/arch/x86/${TARGET_ARCH}/link.ld -ffreestanding -O2 -nostdlib -lgcc")
 
 target_include_directories(spark.bin PRIVATE ${CMAKE_SOURCE_DIR}/src/)
