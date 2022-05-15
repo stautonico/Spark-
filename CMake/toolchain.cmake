@@ -35,6 +35,8 @@ set(CMAKE_STRIP                 ${TOOLCHAIN_BIN_DIR}/${COMPILER_TARGET}-strip)
 
 STRING(REPLACE "_" "-" CMAKE_PROCESSOR_ARCHITECTURE "${CMAKE_PROCESSOR_ARCHITECTURE}")
 
-set(CMAKE_C_FLAGS               "-std=gnu99 -ffreestanding -O2 -Wall -Wextra -m32 -march=${CMAKE_PROCESSOR_ARCHITECTURE} --sysroot=${PROJECT_ROOT}/sysroot" CACHE INTERNAL "C compiler flags")
-set(CMAKE_CXX_FLAGS             "-std=c++20 -ffreestanding -O2 -Wall -Wextra -m32 -march=${CMAKE_PROCESSOR_ARCHITECTURE} --sysroot=${PROJECT_ROOT}/sysroot" CACHE INTERNAL "C++ compiler flags")
+set(COMMON_FLAGS "-ffreestanding -O2 -Wall -Wextra -m32 -march=${CMAKE_PROCESSOR_ARCHITECTURE} --sysroot=${PROJECT_ROOT}/sysroot -Wno-write-strings -Wno-unused-but-set-variable")
+
+set(CMAKE_C_FLAGS               "${COMMON_FLAGS} -std=gnu99" CACHE INTERNAL "C compiler flags")
+set(CMAKE_CXX_FLAGS             "${COMMON_FLAGS} -std=c++20" CACHE INTERNAL "C++ compiler flags")
 # @formatter:on

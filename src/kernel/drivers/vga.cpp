@@ -7,6 +7,7 @@
 #include "vga.h"
 #include <kernel/kernel_libs/string.h>
 
+VGA::VGATextTerminal terminal;
 
 VGA::VGATextTerminal::VGATextTerminal() {
     // Set the default colors
@@ -143,4 +144,29 @@ void VGA::VGATextTerminal::put_oct_at(uint32_t n, size_t x, size_t y) {
 void VGA::VGATextTerminal::put_bin_at(uint32_t n, size_t x, size_t y) {
     put_at("0b", x, y);
     put_at(itoa(n, nullptr, 2), x + 2, y);
+}
+
+void VGA::VGATextTerminal::move_cursor(size_t x, size_t y) {
+    // Shift the cursor to the new position
+    m_column += x;
+    m_row += y;
+
+    if (m_column >= VGA_WIDTH) {
+        m_column = 0;
+        m_row++;
+    }
+
+    if (m_row >= VGA_HEIGHT) {
+        m_row = 0;
+    }
+}
+
+bool VGA::VGATextTerminal::set_cursor(size_t x, size_t y) {
+    if (x >= VGA_WIDTH || y >= VGA_HEIGHT) {
+        return false;
+    }
+
+    m_column = x;
+    m_row = y;
+    return true;
 }

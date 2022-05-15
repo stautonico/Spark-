@@ -1,7 +1,5 @@
 #include <kernel/drivers/serial.h>
-#include <kernel/arch/x86/i686/io.h>
-#include <kernel/kernel_libs/printf.h>
-#include <stdarg.h>
+#include <kernel/arch/x86/io.h>
 
 void serial::serial_init() {
     // TODO: Specify the serial port to use.

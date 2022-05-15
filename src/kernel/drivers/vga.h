@@ -10,8 +10,8 @@
 #include <stdint.h>
 #include <stddef.h>
 
-namespace VGA {
 
+namespace VGA {
 enum Color {
     BLACK = 0,
     BLUE = 1,
@@ -62,6 +62,7 @@ public:
     void put_bin_at(uint32_t n, size_t x, size_t y);
 
     void move_cursor(size_t x, size_t y);
+    bool set_cursor(size_t x, size_t y);
 
 private:
     uint16_t *m_buffer;
@@ -77,8 +78,9 @@ private:
 
     void put_at(const char *str, size_t x, size_t y);
 };
+}; // namespace VGA
 
+extern VGA::VGATextTerminal terminal;
 
-};
 
 #endif // SPARK_VGA_H

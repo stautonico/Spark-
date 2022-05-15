@@ -162,7 +162,9 @@ set(CMAKE_C_FLAGS "-ffreestanding -O2 -Wall -Wextra")
 # TODO: Look how serenity does this
 # or do a add_subdirectory(drivers) and add_subdirectory(arch)
 
-set(KERNEL_SOURCES kernel_libs/printf.cpp kernel_libs/printf.h kernel_libs/string.cpp kernel_libs/string.cpp kernel_libs/string.h debug.cpp)
+set(KERNEL_SOURCES kernel_libs/printf.cpp
+        kernel_libs/string.cpp
+        debug.cpp panic.cpp)
 
 add_subdirectory(arch)
 add_subdirectory(drivers)

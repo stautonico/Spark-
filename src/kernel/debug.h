@@ -12,6 +12,7 @@ namespace Kernel::Debug {
 void debugf(const char *fmt, ...);
 void warnf(const char *fmt, ...);
 void errorf(const char *fmt, ...);
+void panicf(const char *fmt, ...);
 
 } // namespace Kernel
 
