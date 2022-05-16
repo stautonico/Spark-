@@ -148,13 +148,10 @@ project(spark-kernel)
 set(CMAKE_SYSTEM_NAME Linux)
 set(CMAKE_SYSTEM_PROCESSOR ${TARGET_ARCH})
 
-ENABLE_LANGUAGE(ASM)
-
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_FLAGS "-ffreestanding -O2 -Wall -Wextra -fno-exceptions -fno-rtti")
 set(CMAKE_C_FLAGS "-ffreestanding -O2 -Wall -Wextra")
-
 
 ## A simple lib to test C compilation and linking
 #add_library(mylib mylib.c)

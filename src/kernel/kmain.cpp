@@ -20,11 +20,13 @@
 extern "C"
 #endif
 void kmain(void) {
+    // http://www.jamesmolloy.co.uk/tutorial_html/4.-The%20GDT%20and%20IDT.html
+    // http://www.jamesmolloy.co.uk/tutorial_html/
     init_gdt();
     init_idt();
 
-    asm volatile("int $0x3");
-//    asm volatile("int 0x4");
+//    asm volatile("int $0x0");
+//    asm volatile("int $0x4");
 
     terminal.put_str("Hello, world!\n");
 

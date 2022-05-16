@@ -181,7 +181,8 @@ isr22:
     cli             # Disable interrupts
     push 0              # Push the error code
     push 0              # Push the interrupt number
-    jmp isr_common_stub
+    jmp isr_common_stub     # Clean up the pushed error code and ISR number
+    sti
 
 .global isr23
 
@@ -258,29 +259,27 @@ isr31:
 .extern isr_handler
 
 isr_common_stub:
-    sti
-    iret
     pusha           # Save all registers
 
-    mov %ax, %ds    # Set the data segment (lower 16-bits)
+    mov %ds, %ax    # Set the data segment (lower 16-bits)
     push %eax       # Save the data segment descriptor
 
-    mov %ax, 0x10    # Load the kernel data segment descriptor
-    mov %ds, %ax
-    mov %es, %ax
-    mov %fs, %ax
-    mov %gs, %ax
+    mov 0x10, %ax    # Load the kernel data segment descriptor
+    mov %ax, %ds     # Set the data segment (lower 16-bits)
+    mov %ax, %es
+    mov %ax, %fs
+    mov %ax, %gs
 
     call isr_handler
 
     # Restore the original state
     pop %eax
-    mov %ds, %ax
-    mov %es, %ax
-    mov %fs, %ax
-    mov %gs, %ax
+    mov %ax, %ds
+    mov %ax, %es
+    mov %ax, %fs
+    mov %ax, %gs
 
     popa            # Restore all registers
-    add %esp, 8     # Clean up the pushed error code and ISR number
+    add $8, %esp     # Clean up the pushed error code and ISR number
     sti
     iret            # Return to the previous interrupt
