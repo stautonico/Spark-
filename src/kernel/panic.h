@@ -7,6 +7,6 @@
 #ifndef SPARK_PANIC_H
 #define SPARK_PANIC_H
 
-void panic(const char *msg);
+[[noreturn]] void panic(const char *msg);
 
 #endif // SPARK_PANIC_H

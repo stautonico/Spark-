@@ -10,7 +10,7 @@
 #include <kernel/drivers/vga.h>
 #include <kernel/kernel_libs/string.h>
 
-void panic(const char *msg) {
+[[noreturn]] void panic(const char *msg) {
     Kernel::Debug::panicf("%s\n", msg);
     terminal.set_fg_color(VGA::Color::RED);
     // TODO: Replace this with some printf formatting
@@ -18,5 +18,5 @@ void panic(const char *msg) {
 
     // TODO: Halt the CPU
     asm volatile("cli");
-    asm volatile("hlt");
+    while (true) {};
 }
