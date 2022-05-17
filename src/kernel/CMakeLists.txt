@@ -144,6 +144,7 @@
 cmake_minimum_required(VERSION 3.20)
 project(spark-kernel)
 
+
 ## Setup cross-compilation
 set(CMAKE_SYSTEM_NAME Linux)
 set(CMAKE_SYSTEM_PROCESSOR ${TARGET_ARCH})

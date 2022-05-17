@@ -12,9 +12,9 @@
 
 [[noreturn]] void panic(const char *msg) {
     Kernel::Debug::panicf("%s\n", msg);
-    terminal.set_fg_color(VGA::Color::RED);
+    vga_text_terminal.set_fg_color(VGA::Color::RED);
     // TODO: Replace this with some printf formatting
-    terminal.put_str(strcat("Kernel Panic: ", msg));
+    vga_text_terminal.put_str(strcat("Kernel Panic: ", msg));
 
     // TODO: Halt the CPU
     asm volatile("cli");

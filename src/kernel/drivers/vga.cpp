@@ -170,3 +170,8 @@ bool VGA::VGATextTerminal::set_cursor(size_t x, size_t y) {
     m_row = y;
     return true;
 }
+
+// FIXME: This doesn't work for some reason
+// It builds perfectly fine, but it doesn't work when it runs
+// It simply does nothing
+VGA::VGATextTerminal vga_text_terminal;

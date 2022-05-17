@@ -1,41 +1,34 @@
-# Multiboot loader
-.set ALIGN, 1<<0 # Align module pages to 1<<0 (4K)
-.set MEMINFO, 1<<1 # Include memory information in the header
-.set FLAGS, ALIGN | MEMINFO # Flags to pass to the multiboot
-.set MAGIC, 0x1BADB002 # Multiboot magic number
-.set CHECKSUM, -(MAGIC + FLAGS) # Checksum of the magic and flags
+# Multiboot bootloader
+.set MULTIBOOT_PAGE_ALIGN, 1<<0 # Align our pages to 4k
+.set MULTIBOOT_MEM_INFO, 1<<1 # Include memory information in our header
+.set MULTIBOOT_FLAGS, (MULTIBOOT_PAGE_ALIGN | MULTIBOOT_MEM_INFO) # Flags to pass to the multiboot
+.set MULTIBOOT_MAGIC, 0x1BADB002 # Multiboot magic number
+.set MULTIBOOT_CHECKSUM, -(MULTIBOOT_MAGIC + MULTIBOOT_FLAGS) # Checksum of the magic and flags
 
-.section .multiboot
-.align 4 # Align to 4 bytes
-.long MAGIC # Multiboot magic number
-.long FLAGS # Multiboot flags
-.long CHECKSUM # Multiboot checksum
+.global mboot # Pass multiboot header to C/C++
+.extern code, bss, end
 
-# Reserve 16k for the stack
-.section .bootstrap_stack
-stack_bottom:
-.skip 16384 # 16k stack
-stack_top:
+mboot:
+    .long MULTIBOOT_MAGIC # Make multiboot available to grub
+    .long MULTIBOOT_FLAGS
+    .long MULTIBOOT_CHECKSUM
 
+    .long mboot # Add the location of this label
+    .long code # Start of the kernel (.text or 'code' section)
+    .long bss # End of the kernel '.data' section
+    .long end # End of the kernel
+    .long start
 
-.section .text
+.global start # Entry point
+.extern kmain # Use the kernel's main funcion (kmain)
 
+start:
+    push %ebx # Load the multiboot header location
 
-
-# Main start label (called by the bootloader)
-.global _start
-.type _start, @function
-_start:
-    movl $stack_top, %esp # Set esp to the stack
-    mov $0x1337, %eax # Set eax to a magic number
-
-    call kmain # Call the kernel
-
+    # START KERNEL
     cli # Disable interrupts
-    hlt # Halt (should never reach this point)
-
-.Lhang:
-    jmp .Lhang
-
-
-.size _start, . - _start
+    call kmain # Call the kernel
+    # We should never pass this point
+    # but if we do, just infinate loop
+endlessloop:
+    jmp endlessloop
