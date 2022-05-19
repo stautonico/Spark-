@@ -7,56 +7,59 @@
 #include <kernel/arch/x86/idt.h>
 #include <kernel/kernel_libs/string.h>
 
-IDTEntry idt[IDT_ENTRY_COUNT];
-IDTPtr idt_ptr;
-
-IDTEntry IDTEntry::build_entry(uint32_t base, uint16_t selector, uint8_t flags) {
-    uint16_t base_low = base & 0xFFFF;
-    uint16_t base_high = (base >> 16) & 0xFFFF;
-
-    return {base_low, selector, flags, base_high};
-}
+idt_entry_t idt_entries[IDT_ENTRY_COUNT];
+idt_ptr_t idt_ptr;
 
 void init_idt() {
-    idt_ptr.limit = sizeof(IDTEntry) * IDT_ENTRY_COUNT - 1;
-    idt_ptr.base = (uint32_t) &idt;
+    idt_ptr.limit = (sizeof(idt_entry_t) * IDT_ENTRY_COUNT) - 1;
+    idt_ptr.base = (uint32_t) &idt_entries;
 
-    memset(&idt, 0, sizeof(IDTEntry) * IDT_ENTRY_COUNT);
-
-
-    // Set the default interrupt handlers
-    idt[0] = IDTEntry::build_entry((uint32_t)isr0, 0x08, 0x8E);
-    idt[1] = IDTEntry::build_entry((uint32_t)isr1, 0x08, 0x8E);
-    idt[2] = IDTEntry::build_entry((uint32_t)isr2, 0x08, 0x8E);
-    idt[3] = IDTEntry::build_entry((uint32_t)isr3, 0x08, 0x8E);
-    idt[4] = IDTEntry::build_entry((uint32_t)isr4, 0x08, 0x8E);
-    idt[5] = IDTEntry::build_entry((uint32_t)isr5, 0x08, 0x8E);
-    idt[6] = IDTEntry::build_entry((uint32_t)isr6, 0x08, 0x8E);
-    idt[7] = IDTEntry::build_entry((uint32_t)isr7, 0x08, 0x8E);
-    idt[8] = IDTEntry::build_entry((uint32_t)isr8, 0x08, 0x8E);
-    idt[9] = IDTEntry::build_entry((uint32_t)isr9, 0x08, 0x8E);
-    idt[10] = IDTEntry::build_entry((uint32_t)isr10, 0x08, 0x8E);
-    idt[11] = IDTEntry::build_entry((uint32_t)isr11, 0x08, 0x8E);
-    idt[12] = IDTEntry::build_entry((uint32_t)isr12, 0x08, 0x8E);
-    idt[13] = IDTEntry::build_entry((uint32_t)isr13, 0x08, 0x8E);
-    idt[14] = IDTEntry::build_entry((uint32_t)isr14, 0x08, 0x8E);
-    idt[15] = IDTEntry::build_entry((uint32_t)isr15, 0x08, 0x8E);
-    idt[16] = IDTEntry::build_entry((uint32_t)isr16, 0x08, 0x8E);
-    idt[17] = IDTEntry::build_entry((uint32_t)isr17, 0x08, 0x8E);
-    idt[18] = IDTEntry::build_entry((uint32_t)isr18, 0x08, 0x8E);
-    idt[19] = IDTEntry::build_entry((uint32_t)isr19, 0x08, 0x8E);
-    idt[20] = IDTEntry::build_entry((uint32_t)isr20, 0x08, 0x8E);
-    idt[21] = IDTEntry::build_entry((uint32_t)isr21, 0x08, 0x8E);
-    idt[22] = IDTEntry::build_entry((uint32_t)isr22, 0x08, 0x8E);
-    idt[23] = IDTEntry::build_entry((uint32_t)isr23, 0x08, 0x8E);
-    idt[24] = IDTEntry::build_entry((uint32_t)isr24, 0x08, 0x8E);
-    idt[25] = IDTEntry::build_entry((uint32_t)isr25, 0x08, 0x8E);
-    idt[26] = IDTEntry::build_entry((uint32_t)isr26, 0x08, 0x8E);
-    idt[27] = IDTEntry::build_entry((uint32_t)isr27, 0x08, 0x8E);
-    idt[28] = IDTEntry::build_entry((uint32_t)isr28, 0x08, 0x8E);
-    idt[29] = IDTEntry::build_entry((uint32_t)isr29, 0x08, 0x8E);
-    idt[30] = IDTEntry::build_entry((uint32_t)isr30, 0x08, 0x8E);
-    idt[31] = IDTEntry::build_entry((uint32_t)isr31, 0x08, 0x8E);
+    memset(&idt_entries, 0, sizeof(idt_entry_t) * IDT_ENTRY_COUNT);
 
 
+    idt_set_gate(0, (uint32_t) isr0, 0x08, 0x8E);
+    idt_set_gate(1, (uint32_t) isr1, 0x08, 0x8E);
+    idt_set_gate(2, (uint32_t) isr2, 0x08, 0x8E);
+    idt_set_gate(3, (uint32_t) isr3, 0x08, 0x8E);
+    idt_set_gate(4, (uint32_t) isr4, 0x08, 0x8E);
+    idt_set_gate(5, (uint32_t) isr5, 0x08, 0x8E);
+    idt_set_gate(6, (uint32_t) isr6, 0x08, 0x8E);
+    idt_set_gate(7, (uint32_t) isr7, 0x08, 0x8E);
+    idt_set_gate(8, (uint32_t) isr8, 0x08, 0x8E);
+    idt_set_gate(9, (uint32_t) isr9, 0x08, 0x8E);
+    idt_set_gate(10, (uint32_t) isr10, 0x08, 0x8E);
+    idt_set_gate(11, (uint32_t) isr11, 0x08, 0x8E);
+    idt_set_gate(12, (uint32_t) isr12, 0x08, 0x8E);
+    idt_set_gate(13, (uint32_t) isr13, 0x08, 0x8E);
+    idt_set_gate(14, (uint32_t) isr14, 0x08, 0x8E);
+    idt_set_gate(15, (uint32_t) isr15, 0x08, 0x8E);
+    idt_set_gate(16, (uint32_t) isr16, 0x08, 0x8E);
+    idt_set_gate(17, (uint32_t) isr17, 0x08, 0x8E);
+    idt_set_gate(18, (uint32_t) isr18, 0x08, 0x8E);
+    idt_set_gate(19, (uint32_t) isr19, 0x08, 0x8E);
+    idt_set_gate(20, (uint32_t) isr20, 0x08, 0x8E);
+    idt_set_gate(21, (uint32_t) isr21, 0x08, 0x8E);
+    idt_set_gate(22, (uint32_t) isr22, 0x08, 0x8E);
+    idt_set_gate(23, (uint32_t) isr23, 0x08, 0x8E);
+    idt_set_gate(24, (uint32_t) isr24, 0x08, 0x8E);
+    idt_set_gate(25, (uint32_t) isr25, 0x08, 0x8E);
+    idt_set_gate(26, (uint32_t) isr26, 0x08, 0x8E);
+    idt_set_gate(27, (uint32_t) isr27, 0x08, 0x8E);
+    idt_set_gate(28, (uint32_t) isr28, 0x08, 0x8E);
+    idt_set_gate(29, (uint32_t) isr29, 0x08, 0x8E);
+    idt_set_gate(30, (uint32_t) isr30, 0x08, 0x8E);
+    idt_set_gate(31, (uint32_t) isr31, 0x08, 0x8E);
+
+    idt_flush((uint32_t) &idt_ptr);
+}
+
+void idt_set_gate(uint8_t num, uint32_t base, uint16_t sel, uint8_t flags) {
+    idt_entries[num].base_low = base & 0xFFFF;
+    idt_entries[num].base_high = (base >> 16) & 0xFFFF;
+
+    idt_entries[num].selector = sel;
+    idt_entries[num].zero = 0;
+    // We must uncomment the OR below when we get to using user-mode.
+    // It sets the interrupt gate's privilege level to 3.
+    idt_entries[num].flags = flags /* | 0x60 */;
 }
