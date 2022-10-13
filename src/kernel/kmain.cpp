@@ -23,8 +23,8 @@ void kmain(struct multiboot *multiboot_ptr) {
     asm volatile("int $0x4");
     // TODO: Re-write the GDT and IDT
 //    http://www.jamesmolloy.co.uk/tutorial_html/4.-The%20GDT%20and%20IDT.html
-//    VGA::VGATextTerminal terminal;
-//    terminal.put_str("Hello kernel!");
-//    Kernel::Debug::debugf("Hello kernel!");
+    VGA::VGATextTerminal terminal;
+    terminal.put_str("Hello kernel!");
+    Kernel::Debug::debugf("Hello kernel!");
     // http://www.jamesmolloy.co.uk/tutorial_html/
 }

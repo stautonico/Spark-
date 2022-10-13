@@ -114,12 +114,12 @@ def build_toolchain(_args):
 
         os.chdir("binutils-build")
 
-        # check(run_command(
-        #     f"./../binutils-{binutils_version}/configure --target={target_arch}-elf --prefix={toolchain_output_dir} --with-sysroot --disable-nls --disable-werror",
-        #     verbose), "Failed to configure binutils")
+        check(run_command(
+            f"./../binutils-{binutils_version}/configure --target={target_arch}-elf --prefix={toolchain_output_dir} --with-sysroot --disable-nls --disable-werror",
+            verbose), "Failed to configure binutils")
 
-        # check(run_command(f"make -j{jobs}", verbose), "Failed to build binutils")
-        # check(run_command(f"make install", verbose), "Failed to install binutils")
+        check(run_command(f"make -j{jobs}", verbose), "Failed to build binutils")
+        check(run_command(f"make install", verbose), "Failed to install binutils")
 
         info("Verifying binutils installation")
 
@@ -148,13 +148,13 @@ def build_toolchain(_args):
 
         os.chdir("gcc-build")
 
-        # check(run_command(
-        #     f"./../gcc-{gcc_version}/configure --target={target_arch}-elf --prefix={toolchain_output_dir} --disable-nls --enable-languages=c,c++ --without-headers",
-        #     verbose), "Failed to configure GCC")
-        # check(run_command(f"make all-gcc -j{jobs}", verbose), "Failed to build GCC")
-        # check(run_command(f"make all-target-libgcc -j{jobs}", verbose), "Failed to build GCC")
-        # check(run_command(f"make install-gcc", verbose), "Failed to install GCC")
-        # check(run_command(f"make install-target-libgcc", verbose), "Failed to install GCC")
+        check(run_command(
+            f"./../gcc-{gcc_version}/configure --target={target_arch}-elf --prefix={toolchain_output_dir} --disable-nls --enable-languages=c,c++ --without-headers",
+            verbose), "Failed to configure GCC")
+        check(run_command(f"make all-gcc -j{jobs}", verbose), "Failed to build GCC")
+        check(run_command(f"make all-target-libgcc -j{jobs}", verbose), "Failed to build GCC")
+        check(run_command(f"make install-gcc", verbose), "Failed to install GCC")
+        check(run_command(f"make install-target-libgcc", verbose), "Failed to install GCC")
 
         # Verify that gcc was built correctly
         # Run newly built gcc --version
